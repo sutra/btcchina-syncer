@@ -1,0 +1,41 @@
+#!/bin/sh
+#
+# PROVIDE: btcchina_syncer
+# REQUIRE: DAEMON
+# KEYWORD: shutdown
+
+. /etc/rc.subr
+
+name=btcchina_syncer
+rcvar=${name}_enable
+
+load_rc_config $name
+
+: ${btcchina_syncer_enable:="NO"}
+: ${btcchina_syncer_user:="root"}
+: ${btcchina_syncer_basedir:="/usr/local/btcchina-syncer"}
+: ${btcchina_syncer_etcdir:="/usr/local/etc/btcchina-syncer"}
+: ${btcchina_syncer_logdir:="/var/log"}
+: ${btcchina_syncer_stdout:="${btcchina_syncer_logdir}/btcchina-syncer-stdout.log"}
+: ${btcchina_syncer_stderr:="${btcchina_syncer_logdir}/btcchina-syncer-stderr.log"}
+: ${btcchina_syncer_java_home:="/usr/local/openjdk8"}
+: ${btcchina_syncer_lib:="${btcchina_syncer_basedir}/lib"}
+: ${btcchina_syncer_classpath:="${btcchina_syncer_etcdir}:${btcchina_syncer_lib}/*"}
+: ${btcchina_syncer_args:="tradeSyncer orderSyncer transactionSyncer"}
+
+pidfile="/var/run/${name}.pid"
+
+command="/usr/local/bin/jsvc"
+command_args="-java-home '${btcchina_syncer_java_home}' \
+	-server \
+	-user ${btcchina_syncer_user} \
+	-pidfile '${pidfile}' \
+	-outfile '${btcchina_syncer_stdout}' \
+	-errfile '${btcchina_syncer_stderr}' \
+	-classpath '/usr/local/share/java/classes/commons-daemon.jar:${btcchina_syncer_classpath}' \
+	-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager \
+	-Dlog.dir='${btcchina_syncer_logdir}' \
+	org.oxerr.btcchina.syncer.SyncerDaemon \
+	${btcchina_syncer_args}"
+
+run_rc_command "$1"
