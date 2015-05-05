@@ -4,5 +4,4 @@ target/
 .settings/
 src/main/resources/btcchina.properties
 src/main/resources/jdbc.properties
-src/main/resources/log4j2.xml
 .DS_Store
