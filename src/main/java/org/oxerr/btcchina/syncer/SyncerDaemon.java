@@ -35,7 +35,13 @@ public class SyncerDaemon implements Daemon {
 
 		Arrays.stream(names).forEach(
 			name -> syncerThreads.add(
-				new Thread(threadGroup, ctx.getBean(name, Syncer.class), name)));
+				new Thread(
+					threadGroup,
+					() -> ctx.getBean(name, Syncer.class).run(),
+					name
+				)
+			)
+		);
 
 		logger.info("Initialized.");
 	}
