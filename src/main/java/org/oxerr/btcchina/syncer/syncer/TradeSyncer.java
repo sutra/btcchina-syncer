@@ -16,7 +16,7 @@ import com.xeiam.xchange.btcchina.service.polling.BTCChinaMarketDataServiceRaw;
 @Component
 public class TradeSyncer extends AbstractSyncer {
 
-	private final Logger logger = Logger.getLogger(TradeSyncer.class.getName());
+	private final Logger log = Logger.getLogger(TradeSyncer.class.getName());
 
 	private final BTCChinaMarketDataServiceRaw rawMdService;
 	private final TradeDao tradeDao;
@@ -48,16 +48,16 @@ public class TradeSyncer extends AbstractSyncer {
 			// we expected. Pass -1, will return the trades from tid = 1.
 			lastId = -1;
 		}
-		logger.log(Level.FINE, "Last ID: {0}", lastId);
+		log.log(Level.FINE, "Last ID: {0}", lastId);
 	}
 
 	@Override
 	protected void sync() throws IOException {
 		BTCChinaTrade[] trades;
 		do {
-			logger.log(Level.INFO, "Last ID: {0}", lastId);
+			log.log(Level.INFO, "Last ID: {0}", lastId);
 			trades = rawMdService.getBTCChinaHistoryData(market, lastId, limit, "id");
-			logger.log(Level.FINE, "trades.length: {0}", trades.length);
+			log.log(Level.FINE, "trades.length: {0}", trades.length);
 			tradeDao.insert(trades);
 			lastId = Arrays.stream(trades).mapToLong(t -> t.getTid()).max().orElse(lastId);
 		} while (!Thread.interrupted() && trades.length > 0);

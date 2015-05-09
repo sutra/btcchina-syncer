@@ -21,7 +21,7 @@ import com.xeiam.xchange.btcchina.service.polling.BTCChinaTradeServiceRaw;
 @Component
 public class OrderSyncer extends AbstractSyncer {
 
-	private final Logger logger = Logger.getLogger(OrderSyncer.class.getName());
+	private final Logger log = Logger.getLogger(OrderSyncer.class.getName());
 
 	private final BTCChinaTradeServiceRaw rawTradeService;
 	private final BTCChinaTradeServiceRawExt extRawTradeService;
@@ -70,7 +70,7 @@ public class OrderSyncer extends AbstractSyncer {
 				syncOrders("open");
 			}
 		} catch (InterruptedException e) {
-			logger.warning(e.getMessage());
+			log.warning(e.getMessage());
 			Thread.interrupted();
 		}
 	}
@@ -98,7 +98,7 @@ public class OrderSyncer extends AbstractSyncer {
 	}
 
 	private void syncOrders(String status) {
-		logger.log(Level.FINE, "Syncing {0} orders...", status);
+		log.log(Level.FINE, "Syncing {0} orders...", status);
 		List<BTCChinaOrder> orders;
 		long sinceId = 0;
 		do {
@@ -116,7 +116,7 @@ public class OrderSyncer extends AbstractSyncer {
 			try {
 				Thread.sleep(intervalBetweenOrders);
 			} catch (Exception e) {
-				logger.fine(e.getMessage());
+				log.fine(e.getMessage());
 				Thread.currentThread().interrupt();
 			}
 		});
@@ -125,7 +125,7 @@ public class OrderSyncer extends AbstractSyncer {
 	private void syncOrder(BTCChinaOrder order) {
 		try {
 			BTCChinaOrder newStatus = this.rawTradeService.getBTCChinaOrder(order.getId(), market, Boolean.TRUE).getResult().getOrder();
-			logger.log(Level.FINEST, "Syncing order {0}({1}): {2} -> {3}",
+			log.log(Level.FINEST, "Syncing order {0}({1}): {2} -> {3}",
 				new Object[] {
 					order.getId(),
 					Instant.ofEpochSecond(order.getDate()),
@@ -137,11 +137,11 @@ public class OrderSyncer extends AbstractSyncer {
 				orderDao.update(newStatus);
 			}
 		} catch (IOException e) {
-			logger.log(Level.WARNING, e.getMessage());
+			log.log(Level.WARNING, e.getMessage());
 			try {
 				TimeUnit.MINUTES.sleep(1);
 			} catch (InterruptedException ie) {
-				logger.fine(e.getMessage());
+				log.fine(e.getMessage());
 				Thread.currentThread().interrupt();
 			}
 		}

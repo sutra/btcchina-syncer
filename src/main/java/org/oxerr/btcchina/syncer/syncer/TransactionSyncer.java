@@ -17,7 +17,7 @@ import com.xeiam.xchange.btcchina.service.polling.BTCChinaTradeServiceRaw;
 @Component
 public class TransactionSyncer extends AbstractSyncer {
 
-	private static final Logger logger = Logger.getLogger(TransactionSyncer.class.getName());
+	private static final Logger log = Logger.getLogger(TransactionSyncer.class.getName());
 
 	private final BTCChinaTradeServiceRaw rawTradeService;
 	private final TransactionDao transactionDao;
@@ -36,13 +36,13 @@ public class TransactionSyncer extends AbstractSyncer {
 	@Override
 	protected void init() {
 		lastId = transactionDao.getLastId();
-		logger.log(Level.FINE, "Last ID: {0}", lastId);
+		log.log(Level.FINE, "Last ID: {0}", lastId);
 	}
 
 	@Override
 	protected void sync() throws IOException {
 		List<BTCChinaTransaction> transactions = getTransactions();
-		logger.log(Level.FINER, "transactions.count: {0}", transactions.size());
+		log.log(Level.FINER, "transactions.count: {0}", transactions.size());
 		transactionDao.merge(transactions);
 		lastId = transactions.stream().map(t -> t.getId()).max(Long::compareTo).orElse(lastId);
 	}

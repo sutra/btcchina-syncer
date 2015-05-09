@@ -14,7 +14,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 public class SyncerDaemon implements Daemon {
 
-	private final Logger logger = Logger.getLogger(SyncerDaemon.class.getName());
+	private final Logger log = Logger.getLogger(SyncerDaemon.class.getName());
 	private final ThreadGroup threadGroup = new ThreadGroup("syncers");
 	private final List<Thread> syncerThreads = new ArrayList<>();
 	private ClassPathXmlApplicationContext ctx;
@@ -25,10 +25,10 @@ public class SyncerDaemon implements Daemon {
 	@Override
 	public void init(DaemonContext context) throws DaemonInitException,
 			Exception {
-		logger.info("Initializing...");
+		log.info("Initializing...");
 
 		String[] names = context.getArguments();
-		logger.log(Level.INFO, "syncers: {0}", Arrays.toString(names));
+		log.log(Level.INFO, "syncers: {0}", Arrays.toString(names));
 
 		ctx = new ClassPathXmlApplicationContext(
 			"classpath:META-INF/spring/applicationContext.xml");
@@ -43,7 +43,7 @@ public class SyncerDaemon implements Daemon {
 			)
 		);
 
-		logger.info("Initialized.");
+		log.info("Initialized.");
 	}
 
 	/**
@@ -51,12 +51,12 @@ public class SyncerDaemon implements Daemon {
 	 */
 	@Override
 	public void start() throws Exception {
-		logger.info("Starting...");
+		log.info("Starting...");
 
 		ctx.start();
 		syncerThreads.forEach(thread -> thread.start());
 
-		logger.info("Started.");
+		log.info("Started.");
 	}
 
 	/**
@@ -64,12 +64,12 @@ public class SyncerDaemon implements Daemon {
 	 */
 	@Override
 	public void stop() throws Exception {
-		logger.info("Stopping...");
+		log.info("Stopping...");
 
 		syncerThreads.forEach(thread -> thread.interrupt());
 		ctx.stop();
 
-		logger.info("Stopped.");
+		log.info("Stopped.");
 	}
 
 	/**
@@ -77,23 +77,23 @@ public class SyncerDaemon implements Daemon {
 	 */
 	@Override
 	public void destroy() {
-		logger.info("Destroying...");
+		log.info("Destroying...");
 
 		ctx.close();
 		join(threadGroup);
 
-		logger.info("Destroyed.");
+		log.info("Destroyed.");
 	}
 
 	private void join(ThreadGroup threadGroup) {
 		for (Thread thread : getThreads(threadGroup)) {
-			logger.log(Level.FINE, "Wating {0} to die...", thread.getName());
+			log.log(Level.FINE, "Wating {0} to die...", thread.getName());
 			try {
 				thread.join();
 			} catch (InterruptedException e) {
-				logger.log(Level.WARNING, e.getMessage());
+				log.log(Level.WARNING, e.getMessage());
 			}
-			logger.log(Level.FINE, "{0} is dead.", thread.getName());
+			log.log(Level.FINE, "{0} is dead.", thread.getName());
 		}
 	}
 

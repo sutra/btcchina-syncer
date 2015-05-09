@@ -6,7 +6,7 @@ import java.util.logging.Logger;
 
 public abstract class AbstractSyncer implements Syncer {
 
-	private final Logger logger = Logger.getLogger(AbstractSyncer.class.getName());
+	private final Logger log = Logger.getLogger(AbstractSyncer.class.getName());
 	private long interval;
 
 	public AbstractSyncer(long interval) {
@@ -18,23 +18,23 @@ public abstract class AbstractSyncer implements Syncer {
 	 */
 	@Override
 	public void run() {
-		logger.info("Running...");
+		log.info("Running...");
 		init();
 
 		while (!Thread.interrupted()) {
 			try {
 				sync();
-				logger.log(Level.FINEST, "Sleeping {0} milliseconds.", interval);
+				log.log(Level.FINEST, "Sleeping {0} milliseconds.", interval);
 				Thread.sleep(interval);
-				logger.log(Level.FINEST, "Being awake.");
+				log.log(Level.FINEST, "Being awake.");
 			} catch (IOException e) {
-				logger.log(Level.WARNING, e.getMessage());
+				log.log(Level.WARNING, e.getMessage());
 			} catch (InterruptedException e) {
-				logger.fine(e.getMessage());
+				log.fine(e.getMessage());
 				Thread.currentThread().interrupt();
 			}
 		}
-		logger.info("exit.");
+		log.info("exit.");
 	}
 
 	protected void init() {
