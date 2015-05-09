@@ -102,7 +102,7 @@ public class BTCChinaTradeServiceRawExt {
 		logger.log(Level.INFO, "market: {0}, sinceId: {1}, limit: {2}, startOffset: {3}",
 				new Object[] { market, sinceId, limit, startOffset });
 
-		final SortedSet<BTCChinaOrder> orders = new TreeSet<>(BTCChinaOrderComparator.INSTANCE);
+		final SortedSet<BTCChinaOrder> orders = new TreeSet<>((o1, o2) -> o1.getId() - o2.getId());
 		SortedSet<BTCChinaOrder> currentOrders;
 		long offset = startOffset;
 
@@ -145,7 +145,7 @@ public class BTCChinaTradeServiceRawExt {
 		} while (!Thread.interrupted() && currentOrders.size() == batchSize
 				&& !orders.isEmpty() && orders.first().getId() > sinceId);
 
-		final SortedSet<BTCChinaOrder> ret = new TreeSet<>(BTCChinaOrderComparator.INSTANCE);
+		final SortedSet<BTCChinaOrder> ret = new TreeSet<>((o1, o2) -> o1.getId() - o2.getId());
 		ret.addAll(orders
 			.stream()
 			.filter(o -> o.getId() > sinceId)
@@ -182,7 +182,7 @@ public class BTCChinaTradeServiceRawExt {
 	}
 
 	private SortedSet<BTCChinaOrder> extractOrders(BTCChinaGetOrdersResponse resp) {
-		SortedSet<BTCChinaOrder> orders = new TreeSet<>(BTCChinaOrderComparator.INSTANCE);
+		SortedSet<BTCChinaOrder> orders = new TreeSet<>((o1, o2) -> o1.getId() - o2.getId());
 		orders.addAll(Arrays.asList(resp.getResult().getOrdersArray()));
 		for (Map.Entry<String, BTCChinaOrder[]> entry : resp.getResult().entrySet()) {
 			orders.addAll(Arrays.asList(entry.getValue()));
