@@ -30,11 +30,15 @@ import com.xeiam.xchange.btcchina.dto.trade.BTCChinaOrderDetail;
 @Repository
 public class JdbcOrderDao extends JdbcDaoSupport implements OrderDao {
 
-	private final Logger log = Logger.getLogger(JdbcOrderDao.class.getName());
+	private static final String GET_MAX_ID_SQL = "select max(id) from \"order\"";
+	private static final String SELECT_ORDER_SQL = "select id, date, type, price, currency, amount, amount_original, status from \"order\" where status = ? and id > ? order by id limit ?";
+	private static final String INSERT_ORDER_SQL = "insert into \"order\"(id, date, type, price, currency, amount, amount_original, status) values(?, ?, ?, ?, ?, ?, ?, ?)";
+	private static final String UPDATE_ORDER_SQL = "update \"order\" set amount = ?, status = ? where id = ?";
 
-	private final String INSERT_ORDER_SQL = "insert into \"order\"(id, date, type, price, currency, amount, amount_original, status) values(?, ?, ?, ?, ?, ?, ?, ?)";
-	private final String UPDATE_ORDER_SQL = "update \"order\" set amount = ?, status = ? where id = ?";
-	private final String INSERT_DETAIL_SQL = "insert into order_detail(id, order_id, date, amount, price) values(?, ?, ?, ?, ?)";
+	private static final String INSERT_DETAIL_SQL = "insert into order_detail(id, order_id, date, amount, price) values(?, ?, ?, ?, ?)";
+	private static final String DELETE_DETAIL_SQL = "delete from order_detail where order_id = ?";
+
+	private final Logger log = Logger.getLogger(JdbcOrderDao.class.getName());
 
 	@Autowired
 	public JdbcOrderDao(DataSource dataSource) {
@@ -46,19 +50,18 @@ public class JdbcOrderDao extends JdbcDaoSupport implements OrderDao {
 	 */
 	@Override
 	public long getLastId() {
-		return getJdbcTemplate().queryForObject("select max(id) from \"order\"",
-				Long.class);
+		return getJdbcTemplate().queryForObject(GET_MAX_ID_SQL, Long.class);
 	}
 
 	@Override
 	public List<BTCChinaOrder> getOrders(String status, long sinceId, long limit) {
-		log.log(Level.FINEST, "getOrders({0}, {1}, {2})",
+		log.log(Level.FINER, "getOrders({0}, {1}, {2})",
 			new Object[] {
 				status, sinceId, limit,
 			}
 		);
 		return getJdbcTemplate().query(
-			"select id, date, type, price, currency, amount, amount_original, status from \"order\" where status = ? and id > ? order by id limit ?",
+			SELECT_ORDER_SQL,
 			new RowMapper<BTCChinaOrder>() {
 				@Override
 				public BTCChinaOrder mapRow(ResultSet rs, int rowNum)
@@ -138,7 +141,7 @@ public class JdbcOrderDao extends JdbcDaoSupport implements OrderDao {
 	@Override
 	@Transactional
 	public void update(BTCChinaOrder order) {
-		log.log(Level.FINEST, "Updating order {0}.", order.getId());
+		log.log(Level.FINER, "Updating order {0}.", order.getId());
 		if (order.getDetails() != null) {
 			deleteDetails(order.getId());
 			insertDetails(order.getId(), order.getDetails());
@@ -148,7 +151,7 @@ public class JdbcOrderDao extends JdbcDaoSupport implements OrderDao {
 	}
 
 	public int[] insertDetails(long orderId, BTCChinaOrderDetail[] details) {
-		log.log(Level.FINEST, "Inserting order details of order {0}.", orderId);
+		log.log(Level.FINER, "Inserting order details of order {0}.", orderId);
 		return getJdbcTemplate().batchUpdate(INSERT_DETAIL_SQL, new BatchPreparedStatementSetter() {
 
 			@Override
@@ -170,8 +173,7 @@ public class JdbcOrderDao extends JdbcDaoSupport implements OrderDao {
 
 	public void deleteDetails(long orderId) {
 		log.log(Level.FINEST, "Deleting order details of order {0}.", orderId);
-		getJdbcTemplate().update("delete from order_detail where order_id = ?",
-				orderId);
+		getJdbcTemplate().update(DELETE_DETAIL_SQL, orderId);
 	}
 
 }
