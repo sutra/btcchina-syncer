@@ -50,7 +50,8 @@ public class JdbcOrderDao extends JdbcDaoSupport implements OrderDao {
 	 */
 	@Override
 	public long getLastId() {
-		return getJdbcTemplate().queryForObject(GET_MAX_ID_SQL, Long.class);
+		Long lastId = getJdbcTemplate().queryForObject(GET_MAX_ID_SQL, Long.class);
+		return lastId == null ? 0L : lastId.longValue();
 	}
 
 	@Override

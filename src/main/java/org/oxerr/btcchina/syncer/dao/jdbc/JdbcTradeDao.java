@@ -18,6 +18,9 @@ import com.xeiam.xchange.btcchina.dto.marketdata.BTCChinaTrade;
 @Repository
 public class JdbcTradeDao extends JdbcDaoSupport implements TradeDao {
 
+	private static final String GET_MAX_TID_SQL = "select max(tid) from trade";
+	private static final String INSERT_TRADE_SQL = "insert into trade(tid, date, type, amount, price) values(?, ?, ?, ?, ?)";
+
 	@Autowired
 	public JdbcTradeDao(DataSource dataSource) {
 		setDataSource(dataSource);
@@ -28,14 +31,13 @@ public class JdbcTradeDao extends JdbcDaoSupport implements TradeDao {
 	 */
 	@Override
 	public long getLastId() {
-		return getJdbcTemplate().queryForObject("select max(tid) from trade",
-				Long.class);
+		Long lastId = getJdbcTemplate().queryForObject(GET_MAX_TID_SQL, Long.class);
+		return lastId == null ? 0L : lastId.longValue();
 	}
 
 	@Override
 	public int[] insert(BTCChinaTrade[] trades) {
-		return getJdbcTemplate().batchUpdate(
-			"insert into trade(tid, date, type, amount, price) values(?, ?, ?, ?, ?)",
+		return getJdbcTemplate().batchUpdate(INSERT_TRADE_SQL,
 			new BatchPreparedStatementSetter() {
 				@Override
 				public void setValues(PreparedStatement ps, int i) throws SQLException {

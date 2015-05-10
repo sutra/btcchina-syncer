@@ -23,6 +23,10 @@ import com.xeiam.xchange.btcchina.dto.trade.BTCChinaTransaction;
 public class JdbcTransactionDao extends JdbcDaoSupport implements
 		TransactionDao {
 
+	private static final String GET_MAX_ID_SQL = "select max(id) from transaction";
+	private static final String GET_IDS_SQL = "select id from transaction where id between ? and ?";
+	private static final String INSERT_TRANSACTION_SQL = "insert into transaction(id, date, type, amount, money) values(?, ?, ?, ?, ?)";
+
 	@Autowired
 	public JdbcTransactionDao(DataSource dataSource) {
 		setDataSource(dataSource);
@@ -33,14 +37,14 @@ public class JdbcTransactionDao extends JdbcDaoSupport implements
 	 */
 	@Override
 	public long getLastId() {
-		return getJdbcTemplate().queryForObject(
-				"select max(id) from transaction", Long.class);
+		Long lastId = getJdbcTemplate().queryForObject(GET_MAX_ID_SQL, Long.class);
+		return lastId == null ? 0L : lastId.longValue();
 	}
 
 	@Override
 	public List<Long> getIds(long start, long end) {
 		return getJdbcTemplate().queryForList(
-			"select id from transaction where id between ? and ?",
+			GET_IDS_SQL,
 			Long.class, start, end);
 	}
 
@@ -66,7 +70,7 @@ public class JdbcTransactionDao extends JdbcDaoSupport implements
 	@Override
 	public int[] insert(BTCChinaTransaction[] transactions) {
 		return getJdbcTemplate().batchUpdate(
-			"insert into transaction(id, date, type, amount, money) values(?, ?, ?, ?, ?)",
+			INSERT_TRANSACTION_SQL,
 			new BatchPreparedStatementSetter() {
 
 				@Override
