@@ -18,7 +18,7 @@ load_rc_config $name
 : ${btcchina_syncer_logdir:="/var/log"}
 : ${btcchina_syncer_stdout:="${btcchina_syncer_logdir}/btcchina-syncer-stdout.log"}
 : ${btcchina_syncer_stderr:="${btcchina_syncer_logdir}/btcchina-syncer-stderr.log"}
-: ${btcchina_syncer_java_home:="/usr/local/openjdk8"}
+: ${btcchina_syncer_java_home:="/usr/local/openjdk8-jre"}
 : ${btcchina_syncer_lib:="${btcchina_syncer_basedir}/lib"}
 : ${btcchina_syncer_classpath:="${btcchina_syncer_etcdir}:${btcchina_syncer_lib}/*"}
 : ${btcchina_syncer_args:="tradeSyncer orderSyncer transactionSyncer"}
