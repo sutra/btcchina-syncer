@@ -99,7 +99,7 @@ public class BTCChinaTradeServiceRawExt {
 			final long sinceId,
 			final int limit,
 			final long startOffset) throws IOException {
-		logger.log(Level.INFO, "market: {0}, sinceId: {1}, limit: {2}, startOffset: {3}",
+		logger.log(Level.FINER, "market: {0}, sinceId: {1}, limit: {2}, startOffset: {3}",
 				new Object[] { market, sinceId, limit, startOffset });
 
 		final SortedSet<BTCChinaOrder> orders = new TreeSet<>((o1, o2) -> o1.getId() - o2.getId());
@@ -126,6 +126,11 @@ public class BTCChinaTradeServiceRawExt {
 				}
 			} while (!Thread.interrupted() && hasGap);
 
+			if (Thread.interrupted()) {
+				logger.log(Level.FINE, "Thread is interrupted, clear currentOrders.");
+				currentOrders.clear();
+			}
+
 			orders.addAll(currentOrders);
 			while (orders.size() > limit + batchSize) {
 				orders.remove(orders.last());
@@ -145,13 +150,18 @@ public class BTCChinaTradeServiceRawExt {
 		} while (!Thread.interrupted() && currentOrders.size() == batchSize
 				&& !orders.isEmpty() && orders.first().getId() > sinceId);
 
+		if (Thread.interrupted()) {
+			logger.log(Level.FINE, "Thread is interrupted, clear fetched orders.");
+			orders.clear();
+		}
+
 		final SortedSet<BTCChinaOrder> ret = new TreeSet<>((o1, o2) -> o1.getId() - o2.getId());
 		ret.addAll(orders
 			.stream()
 			.filter(o -> o.getId() > sinceId)
 			.collect(Collectors.toSet())
 		);
-		logger.log(Level.FINE, "ret.count: {0}", ret.size());
+		logger.log(Level.FINER, "ret.count: {0}", ret.size());
 		return ret;
 	}
 
