@@ -3,10 +3,8 @@ package org.oxerr.btcchina.syncer.syncer;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.List;
 import java.util.SortedSet;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -18,14 +16,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.xeiam.xchange.btcchina.dto.trade.BTCChinaOrder;
-import com.xeiam.xchange.btcchina.service.polling.BTCChinaTradeServiceRaw;
 
 @Component
 public class OrderSyncer extends AbstractSyncer {
 
 	private final Logger log = Logger.getLogger(OrderSyncer.class.getName());
 
-	private final BTCChinaTradeServiceRaw rawTradeService;
 	private final BTCChinaTradeServiceRawExt extRawTradeService;
 	private final TradeDao tradeDao;
 	private final OrderDao orderDao;
@@ -38,7 +34,6 @@ public class OrderSyncer extends AbstractSyncer {
 
 	@Autowired
 	public OrderSyncer(
-			BTCChinaTradeServiceRaw rawTradeService,
 			BTCChinaTradeServiceRawExt extRawTradeService,
 			TradeDao tradeDao,
 			OrderDao orderDao,
@@ -48,7 +43,6 @@ public class OrderSyncer extends AbstractSyncer {
 			@Value("${btcchina.order.limit}") int limit,
 			@Value("${btcchina.order.intervalBetweenOrders}") long intervalBetweenOrders) {
 		super(interval);
-		this.rawTradeService = rawTradeService;
 		this.extRawTradeService = extRawTradeService;
 		this.tradeDao = tradeDao;
 		this.orderDao = orderDao;
@@ -65,49 +59,52 @@ public class OrderSyncer extends AbstractSyncer {
 
 	@Override
 	protected void sync() {
-		try {
-			if (!Thread.interrupted()) {
+		if (!Thread.interrupted()) {
+			try {
 				syncOrders();
+			} catch (IOException e) {
+				log.log(Level.WARNING, e.getMessage());
 			}
-			if (!Thread.interrupted()) {
+		}
+		if (!Thread.interrupted()) {
+			try {
 				syncOrders("pending", null, null);
+			} catch (IOException e) {
+				log.log(Level.WARNING, e.getMessage());
 			}
-			if (!Thread.interrupted()) {
-				long currentSyncId = tradeDao.getLastId();
-				BigDecimal low = tradeDao.getLow(lastSyncTradeId, currentSyncId);
-				BigDecimal high = tradeDao.getHigh(lastSyncTradeId, currentSyncId);
+		}
+		if (!Thread.interrupted()) {
+			final long currentSyncId = tradeDao.getLastId();
+			final BigDecimal low = tradeDao.getLow(lastSyncTradeId, currentSyncId);
+			final BigDecimal high = tradeDao.getHigh(lastSyncTradeId, currentSyncId);
+			try {
 				syncOrders("open", low, high);
 				lastSyncTradeId = currentSyncId;
+			} catch (IOException e) {
+				log.log(Level.WARNING, e.getMessage());
 			}
-		} catch (InterruptedException e) {
-			log.warning(e.getMessage());
-			Thread.interrupted();
 		}
 	}
 
-	private void syncOrders() throws InterruptedException {
+	private void syncOrders() throws IOException {
 		SortedSet<BTCChinaOrder> orders;
 		do {
-			try {
-				orders = extRawTradeService.getOrders(market, lastId, limit, startOffset);
+			orders = extRawTradeService.getOrders(market, lastId, limit, startOffset);
 
-				if (!orders.isEmpty()) {
-					orderDao.insert(orders);
-					lastId = orders.last().getId();
-				}
+			if (!orders.isEmpty()) {
+				orderDao.insert(orders);
+				lastId = orders.last().getId();
+			}
 
-				startOffset -= limit;
-				if (startOffset < 0) {
-					startOffset = 0;
-				}
-			} catch (IOException e) {
-				orders = Collections.emptySortedSet();
-				TimeUnit.MINUTES.sleep(1);
+			startOffset -= limit;
+			if (startOffset < 0) {
+				startOffset = 0;
 			}
 		} while (!Thread.interrupted() && orders.size() > limit);
 	}
 
-	private void syncOrders(String status, BigDecimal low, BigDecimal high) {
+	private void syncOrders(String status, BigDecimal low, BigDecimal high)
+			throws IOException {
 		log.log(Level.FINE, "Syncing {0}({1}-{2}) orders...",
 			new Object[] { status, low, high, });
 		List<BTCChinaOrder> orders;
@@ -126,45 +123,40 @@ public class OrderSyncer extends AbstractSyncer {
 		} while (!Thread.interrupted() && orders.size() > 0);
 	}
 
-	private void syncOrders(List<BTCChinaOrder> orders) {
-		orders.forEach(order -> {
+	private void syncOrders(List<BTCChinaOrder> orders) throws IOException {
+		for (BTCChinaOrder order : orders) {
 			if (Thread.interrupted()) {
 				log.log(Level.FINER, "Thread was interrupted.");
-				return;
+				break;
 			}
 
 			syncOrder(order);
-			try {
-				Thread.sleep(intervalBetweenOrders);
-			} catch (Exception e) {
-				log.fine(e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-		});
+
+			sleep(intervalBetweenOrders);
+		}
 	}
 
-	private void syncOrder(BTCChinaOrder order) {
+	private void syncOrder(BTCChinaOrder order) throws IOException {
+		BTCChinaOrder newStatus = this.extRawTradeService.getOrder(order.getId(), market, Boolean.TRUE);
+		log.log(Level.FINEST, "Syncing order {0}({1}): {2} -> {3}",
+			new Object[] {
+				order.getId(),
+				Instant.ofEpochSecond(order.getDate()),
+				order.getStatus(),
+				newStatus.getStatus(),
+			}
+		);
+		if (!newStatus.getStatus().equals(order.getStatus())) {
+			orderDao.update(newStatus);
+		}
+	}
+
+	private void sleep(long millis) {
 		try {
-			BTCChinaOrder newStatus = this.rawTradeService.getBTCChinaOrder(order.getId(), market, Boolean.TRUE).getResult().getOrder();
-			log.log(Level.FINEST, "Syncing order {0}({1}): {2} -> {3}",
-				new Object[] {
-					order.getId(),
-					Instant.ofEpochSecond(order.getDate()),
-					order.getStatus(),
-					newStatus.getStatus(),
-				}
-			);
-			if (!newStatus.getStatus().equals(order.getStatus())) {
-				orderDao.update(newStatus);
-			}
-		} catch (IOException e) {
-			log.log(Level.WARNING, e.getMessage());
-			try {
-				TimeUnit.MINUTES.sleep(1);
-			} catch (InterruptedException ie) {
-				log.fine(e.getMessage());
-				Thread.currentThread().interrupt();
-			}
+			Thread.sleep(millis);
+		} catch (Exception e) {
+			log.fine(e.getMessage());
+			Thread.currentThread().interrupt();
 		}
 	}
 

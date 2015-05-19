@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.SortedSet;
 import java.util.TimeZone;
 import java.util.TreeSet;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -36,52 +35,25 @@ public class BTCChinaTradeServiceRawExt {
 
 	private final Logger logger = Logger.getLogger(BTCChinaTradeServiceRawExt.class.getName());
 
+	private final IOExceptionRetryService retryService;
 	private final BTCChinaTradeServiceRaw rawTradeService;
+	/**
+	 * The batch size in querying from BTCChina,
+	 * the maximum value is 1,000.
+	 */
 	private int batchSize = 1000;
-	private int maxRetryTimes = 10;
-	private long retryInterval = 1000;
 
-	public BTCChinaTradeServiceRawExt(BTCChinaTradeServiceRaw rawTradeService) {
+	public BTCChinaTradeServiceRawExt(
+			IOExceptionRetryService retryService,
+			BTCChinaTradeServiceRaw rawTradeService) {
+		this.retryService = retryService;
 		this.rawTradeService = rawTradeService;
 	}
 
-	public int getBatchSize() {
-		return batchSize;
-	}
-
-	/**
-	 * Sets the batch size in querying from BTCChina.
-	 *
-	 * @param batchSize the batch size, the maximum value is 1,000.
-	 */
-	public void setBatchSize(int batchSize) {
-		this.batchSize = batchSize;
-	}
-
-	public int getMaxRetryTimes() {
-		return maxRetryTimes;
-	}
-
-	/**
-	 * Sets the maximum number of retries when IOException occurs.
-	 *
-	 * @param maxRetryTimes the maximum number of retries.
-	 */
-	public void setMaxRetryTimes(int maxRetryTimes) {
-		this.maxRetryTimes = maxRetryTimes;
-	}
-
-	public long getRetryInterval() {
-		return retryInterval;
-	}
-
-	/**
-	 * Sets the interval between retires.
-	 *
-	 * @param retryInterval the number of milliseconds.
-	 */
-	public void setRetryInterval(long retryInterval) {
-		this.retryInterval = retryInterval;
+	public BTCChinaOrder getOrder(int id, String market, Boolean withdetail)
+			throws IOException {
+		return retryService.retry(() -> rawTradeService.getBTCChinaOrder(id,
+				market, Boolean.TRUE)).getResult().getOrder();
 	}
 
 	/**
@@ -167,28 +139,8 @@ public class BTCChinaTradeServiceRawExt {
 
 	private BTCChinaGetOrdersResponse getOrders(String market, int limit,
 			long offset) throws IOException {
-		IOException exception = null;
-		int times = 0;
-
-		while (!Thread.interrupted() && ++times <= maxRetryTimes) {
-			logger.log(Level.FINE, "offset: {0}, times: {1}, previous exception: {2}",
-				new Object[] { offset, times,
-					exception == null ? null : exception.getMessage(), });
-			try {
-				return rawTradeService.getBTCChinaOrders(
-						false, market, limit, (int) offset, GENESIS_BLOCK_TIME_SECOND, true);
-			} catch (IOException e) {
-				exception = e;
-			}
-			try {
-				TimeUnit.MILLISECONDS.sleep(retryInterval);
-			} catch (InterruptedException e) {
-				logger.fine(e.getMessage());
-				Thread.currentThread().interrupt();
-			}
-		}
-
-		throw exception;
+		return retryService.retry(() -> rawTradeService.getBTCChinaOrders(
+				false, market, limit, (int) offset, GENESIS_BLOCK_TIME_SECOND, true));
 	}
 
 	private SortedSet<BTCChinaOrder> extractOrders(BTCChinaGetOrdersResponse resp) {

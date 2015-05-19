@@ -31,24 +31,26 @@
 		factory-bean="exchangeFactory"
 		factory-method="createExchange"
 		c:_0-ref="exchangeSpecification" />
+
 	<bean
 		id="marketDataService"
 		class="com.xeiam.xchange.btcchina.service.polling.BTCChinaMarketDataServiceRaw"
 		factory-bean="exchange"
 		factory-method="getPollingMarketDataService" />
 	<bean
-		id="accountService"
-		class="com.xeiam.xchange.btcchina.service.polling.BTCChinaAccountServiceRaw"
-		factory-bean="exchange"
-		factory-method="getPollingAccountService" />
-	<bean
 		id="tradeService"
 		class="com.xeiam.xchange.btcchina.service.polling.BTCChinaTradeServiceRaw"
 		factory-bean="exchange"
 		factory-method="getPollingTradeService" />
 	<bean
+		id="retryService"
+		class="org.oxerr.btcchina.syncer.service.IOExceptionRetryService"
+		c:_0="${btcchina.retry.maxTimes}"
+		c:_1="${btcchina.retry.interval}" />
+	<bean
 		id="extRawTradeService"
 		class="org.oxerr.btcchina.syncer.service.BTCChinaTradeServiceRawExt"
-		c:_0-ref="tradeService" />
+		c:_0-ref="retryService"
+		c:_1-ref="tradeService" />
 
 </beans>
