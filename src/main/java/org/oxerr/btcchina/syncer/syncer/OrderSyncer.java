@@ -1,6 +1,7 @@
 package org.oxerr.btcchina.syncer.syncer;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.oxerr.btcchina.syncer.dao.OrderDao;
+import org.oxerr.btcchina.syncer.dao.TradeDao;
 import org.oxerr.btcchina.syncer.service.BTCChinaTradeServiceRawExt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,17 +27,20 @@ public class OrderSyncer extends AbstractSyncer {
 
 	private final BTCChinaTradeServiceRaw rawTradeService;
 	private final BTCChinaTradeServiceRawExt extRawTradeService;
+	private final TradeDao tradeDao;
 	private final OrderDao orderDao;
 	private final String market;
+	private final long intervalBetweenOrders;
 	private long lastId;
 	private long startOffset = 0;
 	private int limit = 1_000;
-	private final long intervalBetweenOrders;
+	private long lastSyncTradeId;
 
 	@Autowired
 	public OrderSyncer(
 			BTCChinaTradeServiceRaw rawTradeService,
 			BTCChinaTradeServiceRawExt extRawTradeService,
+			TradeDao tradeDao,
 			OrderDao orderDao,
 			@Value("${btcchina.order.interval}") long interval,
 			@Value("${btcchina.order.market}") String market,
@@ -45,6 +50,7 @@ public class OrderSyncer extends AbstractSyncer {
 		super(interval);
 		this.rawTradeService = rawTradeService;
 		this.extRawTradeService = extRawTradeService;
+		this.tradeDao = tradeDao;
 		this.orderDao = orderDao;
 		this.market = market;
 		this.startOffset = startOffset;
@@ -64,10 +70,14 @@ public class OrderSyncer extends AbstractSyncer {
 				syncOrders();
 			}
 			if (!Thread.interrupted()) {
-				syncOrders("pending");
+				syncOrders("pending", null, null);
 			}
 			if (!Thread.interrupted()) {
-				syncOrders("open");
+				long currentSyncId = tradeDao.getLastId();
+				BigDecimal low = tradeDao.getLow(lastSyncTradeId, currentSyncId);
+				BigDecimal high = tradeDao.getHigh(lastSyncTradeId, currentSyncId);
+				syncOrders("open", low, high);
+				lastSyncTradeId = currentSyncId;
 			}
 		} catch (InterruptedException e) {
 			log.warning(e.getMessage());
@@ -97,12 +107,18 @@ public class OrderSyncer extends AbstractSyncer {
 		} while (!Thread.interrupted() && orders.size() > limit);
 	}
 
-	private void syncOrders(String status) {
-		log.log(Level.FINE, "Syncing {0} orders...", status);
+	private void syncOrders(String status, BigDecimal low, BigDecimal high) {
+		log.log(Level.FINE, "Syncing {0}({1}-{2}) orders...",
+			new Object[] { status, low, high, });
 		List<BTCChinaOrder> orders;
 		long sinceId = 0;
 		do {
-			orders = orderDao.getOrders(status, sinceId, limit);
+			if (low == null || high == null) {
+				orders = orderDao.getOrders(status, sinceId, limit);
+			} else {
+				orders = orderDao.getOrders(status, low, high, sinceId, limit);
+			}
+			log.log(Level.FINE, "{0} orders to sync.", orders.size());
 			if (!orders.isEmpty()) {
 				syncOrders(orders);
 				sinceId = orders.get(orders.size() - 1).getId();
@@ -112,6 +128,11 @@ public class OrderSyncer extends AbstractSyncer {
 
 	private void syncOrders(List<BTCChinaOrder> orders) {
 		orders.forEach(order -> {
+			if (Thread.interrupted()) {
+				log.log(Level.FINER, "Thread was interrupted.");
+				return;
+			}
+
 			syncOrder(order);
 			try {
 				Thread.sleep(intervalBetweenOrders);

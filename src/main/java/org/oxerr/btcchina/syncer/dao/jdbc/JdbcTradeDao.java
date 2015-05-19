@@ -1,5 +1,6 @@
 package org.oxerr.btcchina.syncer.dao.jdbc;
 
+import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -55,6 +56,30 @@ public class JdbcTradeDao extends JdbcDaoSupport implements TradeDao {
 				}
 			}
 		);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public BigDecimal getLow(long beginTid, long endTid) {
+		return getJdbcTemplate().queryForObject(
+			"select min(price) from trade where tid >= ? and tid <= ?",
+			BigDecimal.class,
+			beginTid,
+			endTid);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	@Override
+	public BigDecimal getHigh(long beginTid, long endTid) {
+		return getJdbcTemplate().queryForObject(
+			"select max(price) from trade where tid >= ? and tid <= ?",
+			BigDecimal.class,
+			beginTid,
+			endTid);
 	}
 
 }

@@ -30,8 +30,28 @@ import com.xeiam.xchange.btcchina.dto.trade.BTCChinaOrderDetail;
 @Repository
 public class JdbcOrderDao extends JdbcDaoSupport implements OrderDao {
 
+	private static class BTCChinaOrderRowMapper implements RowMapper<BTCChinaOrder> {
+
+		@Override
+		public BTCChinaOrder mapRow(ResultSet rs, int rowNum)
+				throws SQLException {
+			int id = rs.getInt("id");
+			String type = rs.getString("type");
+			BigDecimal price = rs.getBigDecimal("price");
+			String currency = rs.getString("currency");
+			BigDecimal amount = rs.getBigDecimal("amount");
+			BigDecimal amountOriginal = rs.getBigDecimal("amount_original");
+			long date = rs.getTimestamp("date").toInstant().getEpochSecond();
+			String status = rs.getString("status");
+			BTCChinaOrder order = new BTCChinaOrder(id, type, price, currency, amount, amountOriginal, date, status, null);
+			return order;
+		}
+
+	}
+
 	private static final String GET_MAX_ID_SQL = "select max(id) from \"order\"";
 	private static final String SELECT_ORDER_SQL = "select id, date, type, price, currency, amount, amount_original, status from \"order\" where status = ? and id > ? order by id limit ?";
+	private static final String SELECT_ORDER_SQL_LOW_HIGH = "select id, date, type, price, currency, amount, amount_original, status from \"order\" where status = ? and id > ? and price >= ? and price <= ? order by id limit ?";
 	private static final String INSERT_ORDER_SQL = "insert into \"order\"(id, date, type, price, currency, amount, amount_original, status) values(?, ?, ?, ?, ?, ?, ?, ?)";
 	private static final String UPDATE_ORDER_SQL = "update \"order\" set amount = ?, status = ? where id = ?";
 
@@ -63,22 +83,23 @@ public class JdbcOrderDao extends JdbcDaoSupport implements OrderDao {
 		);
 		return getJdbcTemplate().query(
 			SELECT_ORDER_SQL,
-			new RowMapper<BTCChinaOrder>() {
-				@Override
-				public BTCChinaOrder mapRow(ResultSet rs, int rowNum)
-						throws SQLException {
-					int id = rs.getInt("id");
-					String type = rs.getString("type");
-					BigDecimal price = rs.getBigDecimal("price");
-					String currency = rs.getString("currency");
-					BigDecimal amount = rs.getBigDecimal("amount");
-					BigDecimal amountOriginal = rs.getBigDecimal("amount_original");
-					long date = rs.getTimestamp("date").toInstant().getEpochSecond();
-					String status = rs.getString("status");
-					BTCChinaOrder order = new BTCChinaOrder(id, type, price, currency, amount, amountOriginal, date, status, null);
-					return order;
-				}
-			}, status, sinceId, limit);
+			new BTCChinaOrderRowMapper(),
+			status, sinceId, limit);
+	}
+
+	@Override
+	public List<BTCChinaOrder> getOrders(String status, BigDecimal low,
+			BigDecimal high, long sinceId, long limit) {
+		log.log(Level.FINER, "getOrders({0}, {1}, {2}, {3}, {4})",
+			new Object[] {
+				status, low, high, sinceId, limit,
+			}
+		);
+
+		return getJdbcTemplate().query(
+				SELECT_ORDER_SQL_LOW_HIGH,
+				new BTCChinaOrderRowMapper(),
+				status, sinceId, low, high, limit);
 	}
 
 	/**
