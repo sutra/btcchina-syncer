@@ -26,8 +26,8 @@ create index transaction_type on transaction(type);
 create table "order" (
 	id bigint primary key,
 	date timestamp with time zone not null,
-	-- bid/ask
-	type char(3) not null,
+	-- bid/ask/buyfiat
+	type varchar(7) not null,
 	price numeric(32, 8) not null,
 	currency char(3) not null,
 	amount numeric(16, 8) not null,
