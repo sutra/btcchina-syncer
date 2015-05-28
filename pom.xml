@@ -73,6 +73,7 @@
 						<exclude>btcchina.properties</exclude>
 						<exclude>jdbc.properties</exclude>
 						<exclude>log4j2.xml</exclude>
+						<exclude>META-INF/spring/applicationContext-task.xml</exclude>
 					</excludes>
 				</configuration>
 			</plugin>

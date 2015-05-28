@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<beans xmlns="http://www.springframework.org/schema/beans"
+<beans
+	xmlns="http://www.springframework.org/schema/beans"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:context="http://www.springframework.org/schema/context"
 	xsi:schemaLocation="
@@ -11,6 +12,7 @@
 	<import resource="classpath:META-INF/spring/applicationContext-dao.xml" />
 	<import resource="classpath:META-INF/spring/applicationContext-dataSource.xml" />
 	<import resource="classpath:META-INF/spring/applicationContext-btcchina.xml" />
+	<import resource="classpath:META-INF/spring/applicationContext-task.xml" />
 
 	<context:component-scan base-package="org.oxerr.btcchina.syncer.syncer" />
 

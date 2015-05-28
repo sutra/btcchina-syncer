@@ -46,3 +46,14 @@ create table order_detail (
 	price numeric(32, 8) not null
 );
 create index order_detail_order_id on order_detail(order_id);
+
+create table account(
+	id uuid primary key,
+	version bigint not null,
+	currency char(3) not null,
+	date timestamp with time zone not null,
+	balance numeric(32, 8) not null,
+	frozen numeric(32, 8) not null,
+	loan numeric(32, 8) not null
+);
+create unique index account_version_currency on account(version, currency);
