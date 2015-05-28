@@ -33,8 +33,8 @@ public class JdbcAccountDao extends JdbcDaoSupport implements AccountDao {
 	@Override
 	public void saveAccount(BTCChinaAccountInfo account) {
 		final List<Object[]> rows = new ArrayList<>(account.getBalances().size());
-		final long version = System.currentTimeMillis();
 		final Date now = Date.from(Instant.now());
+		final long version = now.getTime();
 
 		account.getBalances().forEach((currency, value) -> {
 			final BigDecimal balance = getAmount(value);
