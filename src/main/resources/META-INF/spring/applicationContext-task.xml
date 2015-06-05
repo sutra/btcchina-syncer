@@ -9,9 +9,10 @@
 		http://www.springframework.org/schema/task
 		http://www.springframework.org/schema/task/spring-task.xsd">
 
-	<task:scheduler id="scheduler" pool-size="1" />
+	<task:scheduler id="scheduler" pool-size="2" />
 
 	<task:scheduled-tasks scheduler="scheduler">
+		<task:scheduled ref="tradeSyncer"   method="sync" cron="0 * * * * *" />
 		<task:scheduled ref="accountSyncer" method="sync" cron="0 0 * * * *" />
 	</task:scheduled-tasks>
 
