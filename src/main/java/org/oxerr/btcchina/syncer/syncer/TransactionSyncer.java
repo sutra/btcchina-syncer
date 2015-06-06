@@ -5,9 +5,10 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.PostConstruct;
+
 import org.oxerr.btcchina.syncer.dao.TransactionDao;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import com.xeiam.xchange.btcchina.dto.trade.BTCChinaTransaction;
@@ -15,7 +16,7 @@ import com.xeiam.xchange.btcchina.dto.trade.response.BTCChinaTransactionsRespons
 import com.xeiam.xchange.btcchina.service.polling.BTCChinaTradeServiceRaw;
 
 @Component
-public class TransactionSyncer extends AbstractSyncer {
+public class TransactionSyncer {
 
 	private static final Logger log = Logger.getLogger(TransactionSyncer.class.getName());
 
@@ -26,21 +27,18 @@ public class TransactionSyncer extends AbstractSyncer {
 	@Autowired
 	public TransactionSyncer(
 			BTCChinaTradeServiceRaw rawTradeService,
-			TransactionDao transactionDao,
-			@Value("${btcchina.transaction.interval}") long interval) {
-		super(interval);
+			TransactionDao transactionDao) {
 		this.rawTradeService = rawTradeService;
 		this.transactionDao = transactionDao;
 	}
 
-	@Override
-	protected void init() {
+	@PostConstruct
+	private void init() {
 		lastId = transactionDao.getLastId();
 		log.log(Level.FINE, "Last ID: {0}", lastId);
 	}
 
-	@Override
-	protected void sync() throws IOException {
+	public void sync() throws IOException {
 		List<BTCChinaTransaction> transactions = getTransactions();
 		log.log(Level.FINER, "transactions.count: {0}", transactions.size());
 		transactionDao.merge(transactions);

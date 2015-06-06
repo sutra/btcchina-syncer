@@ -21,7 +21,6 @@ load_rc_config $name
 : ${btcchina_syncer_java_home:="/usr/local/openjdk8-jre"}
 : ${btcchina_syncer_lib:="${btcchina_syncer_basedir}/lib"}
 : ${btcchina_syncer_classpath:="${btcchina_syncer_etcdir}:${btcchina_syncer_lib}/*"}
-: ${btcchina_syncer_args:="transactionSyncer"}
 
 pidfile="/var/run/${name}.pid"
 
@@ -35,7 +34,6 @@ command_args="-java-home '${btcchina_syncer_java_home}' \
 	-classpath '/usr/local/share/java/classes/commons-daemon.jar:${btcchina_syncer_classpath}' \
 	-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager \
 	-Dlog.dir='${btcchina_syncer_logdir}' \
-	org.oxerr.btcchina.syncer.SyncerDaemon \
-	${btcchina_syncer_args}"
+	org.oxerr.btcchina.syncer.SyncerDaemon"
 
 run_rc_command "$1"
