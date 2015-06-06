@@ -8,6 +8,8 @@ import java.util.SortedSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.PostConstruct;
+
 import org.oxerr.btcchina.syncer.dao.OrderDao;
 import org.oxerr.btcchina.syncer.dao.TradeDao;
 import org.oxerr.btcchina.syncer.service.BTCChinaTradeServiceRawExt;
@@ -18,7 +20,7 @@ import org.springframework.stereotype.Component;
 import com.xeiam.xchange.btcchina.dto.trade.BTCChinaOrder;
 
 @Component
-public class OrderSyncer extends AbstractSyncer {
+public class OrderSyncer {
 
 	private final Logger log = Logger.getLogger(OrderSyncer.class.getName());
 
@@ -37,12 +39,10 @@ public class OrderSyncer extends AbstractSyncer {
 			BTCChinaTradeServiceRawExt extRawTradeService,
 			TradeDao tradeDao,
 			OrderDao orderDao,
-			@Value("${btcchina.order.interval}") long interval,
 			@Value("${btcchina.order.market}") String market,
 			@Value("${btcchina.order.startOffset}") long startOffset,
 			@Value("${btcchina.order.limit}") int limit,
 			@Value("${btcchina.order.intervalBetweenOrders}") long intervalBetweenOrders) {
-		super(interval);
 		this.extRawTradeService = extRawTradeService;
 		this.tradeDao = tradeDao;
 		this.orderDao = orderDao;
@@ -52,13 +52,12 @@ public class OrderSyncer extends AbstractSyncer {
 		this.intervalBetweenOrders = intervalBetweenOrders;
 	}
 
-	@Override
-	protected void init() {
+	@PostConstruct
+	private void init() {
 		lastId = orderDao.getLastId();
 	}
 
-	@Override
-	protected void sync() {
+	public void sync() {
 		if (!Thread.interrupted()) {
 			try {
 				syncOrders();

@@ -21,7 +21,7 @@ load_rc_config $name
 : ${btcchina_syncer_java_home:="/usr/local/openjdk8-jre"}
 : ${btcchina_syncer_lib:="${btcchina_syncer_basedir}/lib"}
 : ${btcchina_syncer_classpath:="${btcchina_syncer_etcdir}:${btcchina_syncer_lib}/*"}
-: ${btcchina_syncer_args:="orderSyncer transactionSyncer"}
+: ${btcchina_syncer_args:="transactionSyncer"}
 
 pidfile="/var/run/${name}.pid"
 
