@@ -1,59 +1,59 @@
-create table trade (
-	tid bigint primary key,
-	date timestamp with time zone not null,
+CREATE TABLE trade (
+	tid bigint PRIMARY KEY,
+	date timestamp with time zone NOT NULL,
 	-- buy/sell
-	type varchar(4) not null,
-	amount numeric(16,8) not null,
-	price numeric(32,8) not null
+	type varchar(4) NOT NULL,
+	amount numeric(16,8) NOT NULL,
+	price numeric(32,8) NOT NULL
 );
-create index trade_date on trade(date);
-create index trade_type on trade(type);
+CREATE INDEX trade_date ON trade(date);
+CREATE INDEX trade_type ON trade(type);
 
-create table transaction (
-	id bigint primary key,
-	date timestamp with time zone not null,
+CREATE TABLE transaction (
+	id bigint PRIMARY KEY,
+	date timestamp with time zone NOT NULL,
 	-- Type of transaction.
 	-- 'fundbtc | withdrawbtc | fundmoney | withdrawmoney | refundmoney
 	-- | buybtc | sellbtc | refundbtc | tradefee | rebate | fundltc
 	-- | refundltc | withdrawltc | buyltc | sellltc'
-	type varchar(16) not null,
-	amount numeric(16,8) not null,
-	money numeric(32,8) not null
+	type varchar(16) NOT NULL,
+	amount numeric(16,8) NOT NULL,
+	money numeric(32,8) NOT NULL
 );
-create index transaction_date on transaction(date);
-create index transaction_type on transaction(type);
+CREATE INDEX transaction_date ON transaction(date);
+CREATE INDEX transaction_type ON transaction(type);
 
-create table "order" (
-	id bigint primary key,
-	date timestamp with time zone not null,
+CREATE TABLE "order" (
+	id bigint PRIMARY KEY,
+	date timestamp with time zone NOT NULL,
 	-- bid/ask/buyfiat
-	type varchar(7) not null,
-	price numeric(32, 8) not null,
-	currency char(3) not null,
-	amount numeric(16, 8) not null,
-	amount_original numeric(16, 8) not null,
-	status varchar(20) not null
+	type varchar(7) NOT NULL,
+	price numeric(32, 8) NOT NULL,
+	currency char(3) NOT NULL,
+	amount numeric(16, 8) NOT NULL,
+	amount_original numeric(16, 8) NOT NULL,
+	status varchar(20) NOT NULL
 );
-create index order_date on "order"(date);
-create index order_type on "order"(type);
-create index order_status on "order"(status);
+CREATE INDEX order_date ON "order"(date);
+CREATE INDEX order_type ON "order"(type);
+CREATE INDEX order_status ON "order"(status);
 
-create table order_detail (
-	id uuid primary key,
-	order_id bigint not null,
-	date timestamp with time zone not null,
-	amount numeric(16, 8) not null,
-	price numeric(32, 8) not null
+CREATE TABLE order_detail (
+	id uuid PRIMARY KEY,
+	order_id bigint NOT NULL,
+	date timestamp with time zone NOT NULL,
+	amount numeric(16, 8) NOT NULL,
+	price numeric(32, 8) NOT NULL
 );
-create index order_detail_order_id on order_detail(order_id);
+CREATE INDEX order_detail_order_id ON order_detail(order_id);
 
-create table account(
-	id uuid primary key,
-	version bigint not null,
-	currency char(3) not null,
-	date timestamp with time zone not null,
-	balance numeric(32, 8) not null,
-	frozen numeric(32, 8) not null,
-	loan numeric(32, 8) not null
+CREATE TABLE account(
+	id uuid PRIMARY KEY,
+	version bigint NOT NULL,
+	currency char(3) NOT NULL,
+	date timestamp with time zone NOT NULL,
+	balance numeric(32, 8) NOT NULL,
+	frozen numeric(32, 8) NOT NULL,
+	loan numeric(32, 8) NOT NULL
 );
-create unique index account_version_currency on account(version, currency);
+CREATE UNIQUE INDEX account_version_currency ON account(version, currency);
